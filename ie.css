@@ -1,0 +1,5 @@
+html {overflow-y:hidden;}
+body {overflow-y:auto;}
+#bkdiv {position:absolute; z-index:-1;}
+#content {position:static; padding:10px; filter:alpha(opacity=90);}
+#topmenu {filter:alpha(opacity=54);}

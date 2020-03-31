@@ -1,0 +1,131 @@
+/*
+ site: www.houseofkodai.in
+ author: karthik ayyar
+ last update date: 5 feb 2010
+ */
+
+html, body {
+ font-family: Verdana, Helvetica, sans-serif;
+ font-size: 14px;
+ line-height: 1.71em;
+ background-color: #000000;
+ height:100%;
+ margin:0;
+ padding:0;
+ overflow:hidden;
+}
+
+a, a:visited {
+ font-weight:bold;
+ text-decoration: none;
+ outline: medium none;
+ color: #FF9900;
+}
+a:active, a:hover {color: #89BD41;}
+
+.bkgrnd {z-index:1; position:absolute; top:0; left:0; width:100%; height:100%; display:block; visibility:hidden; }
+
+#splash {z-index:1; width:100%; height:100%; text-align:center; padding:1.5em; color:#FFFFFF;}
+  #splash h1 {font-size: 3em;}
+  #splash h2 {font-size: 2em}
+  #splash h3 {font-size: 1.5em; color: #AAAAAA;}
+
+#ldiv, #rdiv {
+ z-index:2;
+ width: 34px;
+ height: 160px;
+ display: block;
+ top: 50%;
+ position: absolute;
+ cursor: pointer;
+ background:orange;
+}
+
+#ldiv {
+ left: 0%;
+ margin: -80px 0px 0px 0px;
+}
+
+#rdiv {
+ left: 100%;
+ margin: -80px 0px 0px -34px;
+}
+
+#status {z-index:99; padding:0px; background:red; color:white; display:block; position:absolute; left:0; top:0;}
+body>div.status {position: fixed}
+
+#topmenu {
+ z-index:3;
+ position:absolute;
+ top:0;
+ right:0;
+ overflow:hidden;
+ display:block;
+ background:#0f0f0f;
+ visibility:hidden;
+ opacity:0.54;
+}
+#topmenu ul {
+ float:left;
+ margin:0;
+ padding:0;
+ position:relative;
+ left:50%;
+ text-align:center;
+}
+#topmenu ul li {
+ display:block;
+ float:left;
+ margin:0;
+ padding:0;
+ position:relative;
+ right:50%;
+}
+#topmenu ul li a {
+ display:block;
+ margin:0 0 0 1px;
+ padding:3px 10px;
+ text-decoration:none;
+ line-height:1.3em;
+}
+#topmenu ul li a:hover {
+ background:#89BD41;
+ color:#000;
+}
+
+#content {
+ z-index:4;
+ padding:10px;
+ position:absolute;
+ top:9%;
+ left:11%;
+ width:78%;
+ height:85%;
+ margin-bottom:5%;
+ background-color:#EFEFEF;
+ overflow:auto;
+ display:block;
+ visibility:hidden;
+ opacity: 0.90;
+}
+
+#content h1, #content h2, #content h3 {margin-bottom: 10px; color: #486C24;}
+#content h2, #content h3 {font-weight:bold;}
+
+#iframe {
+ z-index:3;
+ overflow:hidden;
+ display:block;
+ visibility:hidden;
+ position:absolute;
+ top:9%;
+ left:12%;
+ width:76%;
+ height:85%;
+ margin-bottom:5%;
+ background-color:#EFEFEF;
+}
+
+#guido {text-align:center;}
+.err { color:red; font-weight: bold;}
+#bok { background:red; color:white; position:absolute; top:0; left:0; width:50px; height:100px; display:block; };

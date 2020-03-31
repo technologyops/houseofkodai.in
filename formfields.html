@@ -1,0 +1,129 @@
+<html>
+<head>
+<title>html form fields</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes"/>
+<style type="text/css">
+html, body {margin:0; padding:0; height:100%; width:100%;}
+body {
+ color: #bbb;
+ background: #333;
+ font: normal 12px/18px Helvetica, Arial, sans-serif;
+}
+
+#input {padding:2em;display:table;margin:0 auto;}
+.input {
+ margin: 5px 0;
+ background: white;
+ float: left;
+ clear: both; /* remove this to wrap elements */
+}
+.input span {
+ position: absolute;
+ padding: 5px;
+ margin-left: 3px;
+ color: #999;
+}
+.input input, .input textarea, .input select {
+ position: relative;
+ margin: 0;
+ border-width: 1px;
+ padding: 6px;
+ background: transparent;
+ font: inherit;
+}
+/* Hack to remove Safari's extra padding. Remove if you don't care about pixel-perfection. */
+@media screen and (-webkit-min-device-pixel-ratio:0) {
+ .input input, .input textarea, .input select { padding: 4px; }
+}
+.input textarea {resize:none;}
+</style>
+</head>
+
+<body>
+
+<div id="input">
+  <label class="input">
+    <span>Email address</span>
+    <input id="emailid" type="text" />
+  </label>
+
+  <label class="input">
+    <span>Password</span>
+    <input id="password" type="password" />
+  </label>
+
+  <label class="input">
+    <span>Phone number</span>
+    <input id="phoneno" type="text" value="+358123456789" />
+  </label>
+
+  <label class="input">
+    <span>Country</span>
+    <select id="country">
+      <option></option>
+      <option>US</option>
+      <option>Italy</option>
+      <option>Finland</option>
+      <option>The Netherlands</option>
+    </select>
+  </label>
+
+  <label class="input">
+    <span>Your comment</span>
+    <textarea id="comment" rows="3" cols="60"></textarea>
+  </label>
+
+</div>
+
+<!-- to ensure dom is loaded first - <script> before </body> tag -->
+<script type="text/javascript">
+var oldonload = window.onload;
+
+function toggleinput(input) {
+  if ('' == input.value) {
+    input.style.background='transparent';
+  } else {
+    input.style.background='white';
+  };
+};
+
+function oninput(event) {
+  var input = this;
+  /*note: setTimeout is reqd. bcos. event is called b4 value is set */
+  setTimeout(function() {toggleinput(input);}, 0);
+};
+
+function setinput(idcontainer) {
+  var container = document.getElementById(idcontainer);
+  if (container) {
+    var el = container.firstChild;
+    while(el) {
+      if ('input' == el.className) {
+        var child = el.firstChild;
+        while (child) {
+          if (('INPUT' == child.nodeName) ||
+              ('TEXTAREA' == child.nodeName)) {
+            child.onkeydown = oninput;
+            child.onpaste = oninput;
+            child.onblur = oninput;
+            toggleinput(child);
+          } else if ('SELECT' == child.nodeName) {
+            child.onchange = oninput;
+            toggleinput(child);
+          };
+          child = child.nextSibling;
+        };
+      };
+    el = el.nextSibling;
+    };
+  };
+};
+
+window.onload = function(e) {
+  if (oldonload) { oldonload(); };
+  //do onload code here - change name of input appropriately
+  setinput('input');
+};
+</script>
+</body>
+</html>

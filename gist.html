@@ -1,0 +1,102 @@
+<html>
+<head>
+<title>gist</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes"/>
+<style type="text/css">
+html, body {margin:0; padding:0; height:100%; width:100%;}
+body {
+ overflow: hidden;
+ color: #bbb;
+ background: #333;
+ font: normal 12px/18px Helvetica, Arial, sans-serif;
+ font-size: large;
+ line-height: 1.25em;
+}
+#parent {display:table; text-align:center; width:100%; height:90%;}
+#child {display:table-cell; vertical-align: middle; }
+</style>
+</head>
+
+<body>
+<div id="parent">
+<div id="child">
+<select id="who" onchange="mkgist();">
+  <option>Accused</option>
+  <option>Unknown culprits</option>
+</select>
+ 
+<select id="what" onchange="mkgist();">
+  <option>entered</option>
+  <option>broke into</option>
+</select>
+
+<select id="where" onchange="mkgist();">
+  <option>house</option>
+  <option>office</option>
+  <option>factory</option>
+  <option>shop</option>
+</select>
+
+and stole
+<select id="property" onchange="mkgist();">
+  <option>cash</option>
+  <option>jewellery</option>
+  <option>electronics</option>
+  <option>property</option>
+</select>
+
+worth Rs. <input type="text" id="worth" size="7" onchange="mkgist();" value="7000">
+
+<br/>
+
+<select id="fingerprint" onchange="mkgist();">
+  <option>Fingerprint experts visited site and developed prints.</option>
+  <option></option>
+</select>
+
+<br/>
+
+<select id="fpresult" onchange="mkgist();">
+  <option>Accused prints were matched with those in SOC.</option>
+  <option>No matching prints were found.</option>
+  <option></option>
+</select>
+
+<br/>
+
+<select id="recovered" onchange="mkgist();">
+  <option>No property was recorved.</option>
+  <option>All property was recovered.</option>
+  <option>Some property was recovered.</option>
+</select>
+<p id="gist"></p>
+</div>
+</div>
+
+<script type="text/javascript">
+var oldonload = window.onload;
+var gist = document.getElementById('gist');
+var who = document.getElementById('who');
+var what = document.getElementById('what');
+var where = document.getElementById('where');
+var property = document.getElementById('property');
+var worth = document.getElementById('worth');
+var fingerprint = document.getElementById('fingerprint');
+var fpresult = document.getElementById('fpresult');
+var recovered = document.getElementById('recovered');
+
+function mkgist() {
+  gist.innerHTML = who.value + " " + what.value + " " + where.value + 
+  " and stole " + property.value + " worth Rs. " + worth.value + 
+  "<br/>" + 
+  fingerprint.value + " " + fpresult.value +
+  "<br/>" + recovered.value;
+};
+
+window.onload = function(e) {
+  if (oldonload) { oldonload(); };
+  mkgist();
+};
+</script>
+</body>
+</html>

@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset=utf-8 />
+<meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+<title>Tone Deaf</title>
+<style>
+* {margin:0; padding:0;}
+html, body {height:100%; overflow:hidden;}
+textarea {font-size: 2em; width:100%; height:100%; overflow:auto;}
+#ta_keyfreq {height:30%;}
+div#browser-warning {position:fixed; box-sizing:border-box; border-radius:5px; top:30%; left:20%; width:60%; padding:2em;
+background-color:#999; opacity:0.9; z-index:1000; font-size:18px; color:white; }
+</style>
+</head>
+<body>
+<textarea id="ta_keyfreq">{'A':220, 'B':246, 'C':261, 'D':293, 'E':329, 'F':349, 'G':391, 'KA':440}</textarea>
+<script>
+if (document.addEventListener)
+  document.addEventListener("DOMContentLoaded", init, false);
+else
+  window.onload = init;
+
+function init() {
+
+  if (typeof(AudioContext) !== 'undefined') {
+    window.context = new AudioContext();
+  } else if (typeof(webkitAudioContext) !== 'undefined') {
+    window.context = new webkitAudioContext();
+  }
+  if (window.context === undefined || typeof(OscillatorNode) === 'undefined' || typeof(OscillatorNode.prototype.start) === 'undefined') {
+    var warning = document.createElement("div");
+    warning.id = "browser-warning";
+    warning.innerHTML = "your browser does not fully support the Web Audio API.<br/><br/>Do install <a href='http://www.mozilla.org/firefox/new/'>Firefox</a> or <a href='http://www.google.com/chrome'>Chrome</a>.";
+    document.body.appendChild(warning);
+    return;
+  }
+  var prevkey="";
+  var keyfreq;
+  var ta_keyfreq = document.getElementById('ta_keyfreq');
+  ta_keyfreq.onblur = function() {
+    var json = eval("(" + ta_keyfreq.value + ")");
+    if (json) { keyfreq = json; }
+  }
+  ta_keyfreq.onblur();
+
+  var ta_type = document.createElement("textarea")
+  ta_type.id = "ta_type";
+  ta_type.onkeydown = function(e) {
+    //space-key = 32
+    if (32 == e.keyCode) {prevkey = ""};
+    if ((e.keyCode < 65) || (e.keyCode > 90)) {return}
+    var c = String.fromCharCode(e.keyCode);
+    var k = prevkey + c
+    if (!(k in keyfreq)) { k = c; };
+    tones.play(keyfreq[k]);
+    prevkey = c;
+  }
+  ta_type.onkeyup = function(e) {
+    if ((e.keyCode < 65) || (e.keyCode > 90)) {return}
+    tones.stop();
+  }
+  document.body.appendChild(ta_type);
+  ta_type.focus();
+}
+
+var FADE_TIME=0.1;
+var tones={
+  playing:false,
+  play:function(a) {
+    if (!a) return;
+    if (!this.playing) {
+      this.playing=true;
+      this.oscillator=window.context.createOscillator();
+      this.gainNode=window.context.createGain();
+      this.oscillator.connect(this.gainNode);
+      this.gainNode.connect(window.context.destination);
+      this.oscillator.frequency.value=a;
+      this.gainNode.gain.linearRampToValueAtTime(0,window.context.currentTime);
+      this.gainNode.gain.linearRampToValueAtTime(1,window.context.currentTime+FADE_TIME);
+      this.oscillator.start(0)
+    } else {
+      this.oscillator.frequency.value=a
+    }
+  },
+  stop:function() {
+    if (!this.playing) {return}
+    var a=window.context.currentTime;
+    this.gainNode.gain.linearRampToValueAtTime(1,a);
+    this.gainNode.gain.linearRampToValueAtTime(0,a+FADE_TIME);
+    this.oscillator.stop(a+FADE_TIME);
+    this.playing=false
+  }
+};
+</script>
+</body>
+</html>

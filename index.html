@@ -1,0 +1,35 @@
+<html>
+<head>
+<title>house of kodai</title>
+
+<link rel="stylesheet" href="site.css" type="text/css" media="screen,projection">
+<!--[if lte IE 6]><link rel='stylesheet' href='ie.css' type='text/css' media='screen'/></style><![endif]-->
+<script language="javascript" type="text/javascript" src="kanim.js"></script>
+<script language="javascript" type="text/javascript" src="site.js"></script>
+<script language="javascript" type="text/javascript">
+
+window.onkeyup = function(k) {
+  setTimeout(function(){location.href = 'home.html';}, 2000);
+};
+
+window.onload = function() {
+  /* preload bkimg - into cache */
+  img = new Image();
+  img.src = 'hok.jpg';
+};
+
+</script>
+</head>
+
+<body>
+ <div id="splash">
+  <h1>h o u s e &nbsp; o f &nbsp; k o d a i</h1>
+  <h3>a simple way of life</h3>
+  <br><br>
+  <a id='areyouready' href="https://goo.gl/photos/h3Arw3FS5Ue1319Q7"><h2>are you ready?</h2></a>
+  <a href="home.html"><div id="ldiv" onmouseover="style.backgroundColor='#89BD41';" onmouseout="style.backgroundColor='orange'"></div></a>
+  <a href="home.html"><div id="rdiv" onmouseover="style.backgroundColor='#89BD41';" onmouseout="style.backgroundColor='orange'"></div></a>
+ </div>
+</body>
+</html>
+

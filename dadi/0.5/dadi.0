@@ -1,0 +1,152 @@
+#
+# DaDi/0.5 file format
+#
+# 01 DEC 2011: karthik@houseofkodai.in
+#
+#  statement is a line of words, seperated by space characters
+#  multiple statements are seperated by a linefeed character LF \n #10
+#  blank lines and lines starting with # (comments) are ignored
+#
+#  first word of statement is directive; following words are paramaters to that directive
+#
+#   directives:
+#
+#    channel <url> [title]
+#    font <name> [size]
+#    idle <duration in seconds> [channel index]
+#    open <url>
+#    poll <interval in seconds> [channel index]
+#    scroll <pixels> [interval in milliseconds]
+#    upgrade <url>
+#    wav <wave file in windows/media directory>
+#    window <style 0 to 256>
+#    http:
+#    \[color] [message]
+#
+#  notes:
+#    links are lines, where the first word starts with the string "http"
+#    lines starting with \ are message lines with color code being the first word
+#      \<color>: color-code or numeric
+#        default-color is ltgray
+#        color codes: \a Aqua \b Blue \f Fuchsia \g Green \l Lime \m Maroon \n Navy \o Olive \p Purple \r Red \s Silver \t Teal \w White \y Yellow
+#    lines starting with unknown directives are messages with the default-color
+#    <url> are directives that start with http
+#    if there are no messages in response/update, then display the previous message
+#    if request-error - show previous message - first message ?!
+#    use single/double quotes to include space in words
+#    space characters are valid in beginning and end of messages
+#    directives are evaluated in the top-down order; so same directive later will override the previous value
+#    empty message will hide the window
+#    if http server returns 304 'Not Modified' then the response is ignored
+#    if http server returns 407 it will try to use proxy-credentials, if provided
+#    configurable options for dadi.exe [url] [pollinterval] [proxyuser] [proxypass]
+#    configuration via. command-line or confdadi.py to include in exe itself
+#
+#
+
+#
+# channel [url] [title]
+#
+#   url starts with http
+#      absolute url
+#   else
+#      relative url (appended to default-url)
+#
+#   ends-width /
+#     file-access (macid or 0)
+#   else
+#     resource-access (replace \m \v \u strings)
+#
+#   if no title then do not display in menu - can be used for idle/poll events
+#   channel-index is determined by listed order starting from 1 (0 is startup-url)
+channel tamil Tamil Dadi
+channel hdu The Hindu
+channel idlehidden
+channel mnt Mint
+channel 1 File One
+channel bbc BBC
+channel nyt New York Times
+channel ins India News
+channel wns World News
+channel hns Hacker News
+channel http://localhost/\m/\d/\u/\v Link user, domain, macid, and dskid
+
+
+#font <name> [size]
+font "Courier New" 36
+
+#idle <duration in seconds> [channel index]
+#  system inactivity - poll a specified channel, when system goes to sleep
+#  if channel-index is not specified, poll currently selected channel
+#idle 10 3
+
+#open <url>
+#note: launch browser with url
+#open http://www.houseofkodai.in/
+
+#poll <interval in seconds> [channel index]
+#note:
+#  set poll-interval
+#  if channel-index is specified and is not current-channel then poll channel immediately
+#  if interval is - then change channel only
+#poll 300
+poll 5 2
+
+#scroll <pixels> [interval in milliseconds]
+#scroll -3 50
+
+#upgrade <url>
+#note: launch browser with url and exit application
+#upgrade http://ks3.enmail.com/dadi/0.5/
+
+#wav <wave file-name in windows/media directory> [set]
+# if file-name is set - disable playing sound
+# if set option then save the setting for future messages
+#wav tada.wav
+
+#window <style>
+# style is transparency value 0 is fully-transparent - 50 is semi-transparent and looks good
+#   style 0 menu clicks are difficult.
+#window 50
+
+#links <url must start with "http"> [title]
+# if no title url is the title
+#http://
+http://economictimes.indiatimes.com/news/politics/nation/itbp-sends-rs-11-crore-bill-for-ajmal-kasabs-security-maharashtra-says-it-is-a-national-issue/articleshow/8557522.cms 19:06 ITBP sends Rs 11 crore bill for Ajmal Kasab's security; Maharashtra says it is ...
+http://timesofindia.indiatimes.com/india/LeT-militant-killed-hide-busted-in-Jammu-region/articleshow/8557534.cms 19:00 LeT militant killed, hide busted in Jammu region
+http://www.smh.com.au/world/spy-agency-planned-mumbai-attack-20110524-1f2ec.html 18:55 Spy agency 'planned' Mumbai attack
+http://www.thehindu.com/news/states/tamil-nadu/article2045398.ece 18:55 Nobody should politicise Rajiv assassination: Congress
+http://www.dnaindia.com/india/report_congress-says-jairam-ramesh-best-person-to-explain-remarks-on-iims_1546968 18:42 Congress says Jairam Ramesh best person to explain remarks on IIMs
+
+#message lines
+directive unknown 
+\
+\ above is empty message
+\aqua  message
+\blue  message
+\fuchsia  message
+\green  message
+\lime  message
+\maroon  message
+\navy  message
+\olive  message
+\purple  message
+\red  red message
+\silver  silver message
+\teal  teal message
+\white  white message 
+\yellow  yellow message
+
+\g  I
+\y n
+\r d
+\w i
+\b a
+\green " *"
+\yellow *
+\red "* "
+some light grey message
+
+\12475 numeric color message
+ end. 
+

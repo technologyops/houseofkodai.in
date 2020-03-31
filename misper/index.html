@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html>
+<head>
+ <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+ <meta name="robots" content="noindex, nofollow">
+ <meta name="googlebot" content="noindex, nofollow">
+ <script type="text/javascript" src="jquery-2.1.3.js"></script>
+ <script type="text/javascript" src="vue-tables.min.js"></script>
+ <link rel="stylesheet" type="text/css" href="bootstrap.min.css">
+ <script type="text/javascript" src="moment.min.js"></script>
+ <script type="text/javascript" src="daterangepicker.min.js"></script>
+ <link rel="stylesheet" type="text/css" href="daterangepicker.min.css">
+ <script type="text/javascript" src="vue.min.js"></script>
+ <style type="text/css">
+#people {
+  text-align: center;
+  width: 95%;
+  margin: 0 auto;
+}
+
+h2 {
+  margin-bottom: 30px;
+}
+
+th,
+td {
+  text-align: left;
+}
+
+th:nth-child(n+2),
+td:nth-child(n+2) {
+  text-align: center;
+}
+
+thead tr:nth-child(2) th {
+  font-weight: normal;
+}
+
+.VueTables__sort-icon {
+  margin-left: 10px;
+}
+
+.VueTables__dropdown-pagination {
+  margin-left: 10px;
+}
+
+.VueTables__highlight {
+  background: yellow;
+  font-weight: normal;
+}
+
+.VueTables__sortable {
+  cursor: pointer;
+}
+
+.VueTables__date-filter {
+  border: 1px solid #ccc;
+  padding: 6px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.VueTables__filter-placeholder {
+  color: #aaa;
+}
+
+.VueTables__list-filter {
+  width: 120px;
+}
+
+ </style>
+ <title>Missing Persons & Unidentified Bodies</title>
+</head>
+<body>
+<div id="people" class="container">
+ <h2>Missing Persons &amp; Unidentified Bodies</h2>
+ <v-client-table :data="tableData" :columns="columns" :options="options"></v-client-table>
+</div>
+
+<script type='text/javascript'>
+
+window.onload=function() {
+
+var dummydata = {
+  districts: ["ADYAR",
+  "AMBATTUR",
+  "ANNA NAGAR",
+  "ARIYALUR",
+  "CBCID - CC WING",
+  "CBCID - CYBER CELL",
+  "CBCID - HQRS",
+  "CBCID - NORTH",
+  "CBCID - OCU",
+  "CBCID - SID",
+  "CBCID - SOUTH",
+  "CCIW",
+  "CHENNAI - CCB",
+  "CHENNAI - PEW EAST",
+  "CHENNAI - PEW NORTH",
+  "CHENNAI - PEW SOUTH",
+  "CHENNAI - PEW WEST",
+  "CHENNAI - TIW NORTH",
+  "CHENNAI - TIW SOUTH",
+  "COIMBATORE",
+  "COIMBATORE CITY",
+  "CSCID - CHENNAI",
+  "CSCID - MADURAI",
+  "CSGCID - NAGAPATTINAM",
+  "CSGCID - RAMNAD",
+  "CUDDALORE",
+  "DHARMAPURI",
+  "DINDIGUL",
+  "EOW",
+  "ERODE",
+  "FLOWER BAZAAR",
+  "GRP CHENNAI",
+  "GRP TRICHY",
+  "IDOL WING",
+  "KANCHEEPURAM",
+  "KANYAKUMARI",
+  "KARUR",
+  "KILPAUK",
+  "KRISHNAGIRI",
+  "MADHAVARAM",
+  "MADURAI",
+  "MADURAI CITY",
+  "MYLAPORE",
+  "NAGAPATTINAM",
+  "NAMAKKAL",
+  "NIB - CID",
+  "NILGIRIS",
+  "PERAMBALUR",
+  "PUDUKKOTTAI",
+  "PULIANTHOPE",
+  "Q-BRANCH CID",
+  "RAMANATHAPURAM",
+  "SALEM",
+  "SALEM CITY",
+  "SIVAGANGAI",
+  "ST.THOMAS MOUNT",
+  "THANJAVUR",
+  "THENI",
+  "THOOTHUKUDI",
+  "TIRUNELVELI",
+  "TIRUNELVELI CITY",
+  "TIRUPPUR",
+  "TIRUPPUR CITY",
+  "TIRUVALLUR",
+  "TIRUVANNAMALAI",
+  "TIRUVARUR",
+  "T.NAGAR",
+  "TRICHY",
+  "TRICHY CITY",
+  "TRIPLICANE",
+  "VELLORE",
+  "VILLUPURAM",
+  "VIRUDHUNAGAR",
+  "VPC - CID",
+  "WASHERMENPET"],
+  typ: ['Missing Person', 'Unidentified Body'],
+  sex: ['Male', 'Female'],
+  colors: ['aqua', 'black', 'blue', 'fuchsia', 'gray', 'grey', 'green', 'lime', 'maroon', 'navy', 'olive', 'purple', 'red', 'silver', 'teal', 'white', 'yellow'],
+  list: function(fname) {
+    var r = [];
+    var a = this[fname];
+    var n = a.length;
+    for (i=0; i < n; i++) {
+      r[i+1] = {'id':i, 'text':a[i]};
+    };
+    return r;
+  },
+  rnd: function (fname, isValue) {
+    var a = this[fname];
+    var n = a.length;
+    if (isValue) {
+      return a[Math.floor(Math.random() * n)];
+    } else {
+      return Math.floor(Math.random() * n);
+    }
+  },
+  randomName: function(minlength, maxlength) {
+    //http://leapon.net/files/namegen.html
+    function r(minv, maxv){ if (maxv < minv) return 0; return Math.floor(Math.random()*(maxv-minv+1)) + minv; }
+    minlength = minlength || 5;
+    maxlength = maxlength || 9;
+    var vocals = 'aeiouyh' + 'aeiou' + 'aeiou';
+    var cons = 'bcdfghjklmnpqrstvwxz' + 'bcdfgjklmnprstvw' + 'bcdfgjklmnprst';
+    var allchars = vocals + cons;
+    var length = r(minlength, maxlength);
+    var consnum = 1;
+    var name = '';
+    for (var i = 0; i < length; i++) {
+      //if we have used 2 consonants, the next char must be vocal.
+      if (consnum == 2) {
+        touse = vocals;
+        consnum = 0;
+      } else touse = allchars;
+      //pick a random character from the set we are goin to use.
+      c = touse.charAt(r(0, touse.length - 1));
+      name = name + c;
+      if (cons.indexOf(c) != -1) consnum++;
+    }
+    return name.charAt(0).toUpperCase() + name.substring(1, name.length);
+  }
+};
+
+function parse_qs(qs) {
+  qs = qs.split('+').join(' ');
+  var params = {},
+  tokens,
+  re = /[?&]?([^=]+)=([^&]*)/g;
+  var n = 0;
+  while ((n < 5) && (tokens = re.exec(qs))) {
+    params[decodeURIComponent(tokens[1])] = decodeURIComponent(tokens[2]);
+    n = n + 1;
+  }
+  return params;
+}
+
+// Courtesy of Tomasz Nurkiewicz (http://stackoverflow.com/questions/9035627/elegant-method-to-generate-array-of-random-dates-within-two-dates)
+function randomDate(start, end) {
+  return moment(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
+}
+
+function randomTableData(n) {
+  n = n || 500;
+  var qs = parse_qs(document.location.search);
+  if (qs.n) { n = qs.n };
+  var r = [];
+  for (i=0;i<n;i++) {
+    r[i+1] = {'id':i+1,
+      'district': dummydata.rnd('districts'),
+      'typ': dummydata.rnd('typ'),
+      'clr': dummydata.rnd('colors'),
+      'sex': dummydata.rnd('sex'),
+      'height': Math.floor(Math.random()*180)+30,
+      'weight': Math.floor(Math.random()*120)+10,
+      'age': Math.floor(Math.random()*100)+10,
+      'name': dummydata.randomName(5,9),
+      'birth_date': randomDate(new Date(2000, 0, 1), new Date(2017, 0, 1))}
+  }
+  return r;
+}
+
+Vue.use(VueTables.client, {
+  //compileTemplates: true,
+  highlightMatches: true,
+  //pagination: {
+  // dropdown:true
+  // chunk:5
+  // },
+  filterByColumn: true,
+  texts: {
+    filter: "Search:"
+  },
+  datepickerOptions: {
+    showDropdowns: true
+  }
+});
+
+new Vue({
+  el: "#people",
+  ready: function() {
+    this.$on('vue-tables.row-click', function(row) {
+      console.log(row);
+    });
+  },
+  //location, type, date, age, sex, height, weight, dress-color, identifyin-marks, name
+  data: {
+    columns: ['district', 'birth_date', 'typ', 'sex', 'height', 'weight', 'age', 'clr', 'name'],
+    options: {
+      dateColumns: ['birth_date'],
+      headings: {
+        district: 'Location',
+        birth_date: 'Date of Occurance',
+        typ: 'Type',
+        sex: 'Sex',
+        height: 'Height (cms)',
+        weight: 'Weight (kgs)',
+        age: 'Age',
+        clr: 'Dress Colour',
+        idmarks: 'Identifying Marks',
+        name: 'Name',
+      },
+      listColumns: {
+        district: dummydata.list("districts"),
+        typ: dummydata.list("typ"),
+        clr: dummydata.list("colors"),
+        sex: dummydata.list("sex"),
+      },
+      customFilters: [{
+          name: 'alphabet',
+          callback: function(row, query) {
+            return row.name[0] == query;
+          }
+        }]
+    },
+    tableData: randomTableData(),
+  }
+});
+
+}
+
+</script>
+
+</body>
+</html>
+

@@ -1,0 +1,50 @@
+#!/usr/bin/python
+# 28 JAN 2012: karthik@houseofkodai.in
+
+def errexit(s):
+  import sys
+  if s: print s
+  sys.exit(1)
+
+def appendexe(fname, data):
+  #print 'appendexe(%s,%s)'%(fname, data)
+  import os
+  if not os.path.isfile(fname): errexit()
+  if os.path.isfile(data):
+    try:
+      fh = open(data, 'rb')
+      data = fh.read()
+      fh.close()
+    except:
+      data = ''
+  if not data: errexit('\n unable to read %s'%data)
+  exedata = ''
+  try:
+    fh = open(fname, 'rb')
+    exedata = fh.read()
+    fh.close()
+  except:
+    exedata = ''
+  if not exedata: errexit('\n unable to read %s'%fname)
+  import struct
+  #check for previous data update index as reqd 
+  if ('amrak' == exedata[-5:]):
+    i = len(exedata)-9-struct.unpack('l', exedata[-9:-5])[0]
+    exedata = exedata[:i]
+  else:
+    i = 0
+  #ensure signature is the same as in exe
+  sig = '%samrak'%struct.pack('l', len(data))
+  try:
+    fh = open(fname, 'wb')
+    fh.write(exedata)
+    fh.write(data)
+    fh.write(sig)
+    fh.close()
+  except:
+    errexit('\n unable to update %s'%fname)
+
+if '__main__' == __name__:
+  #dadi/0.5 format
+  #dadi.exe url [pollinterval] [proxyuser] [proxypass]
+  appendexe('dadi.exe', 'http://localhost:8010/dadi 60')

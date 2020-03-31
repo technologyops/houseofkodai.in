@@ -1,0 +1,54 @@
+<html>
+
+<head>
+<title>tinyTkr</title>
+</head>
+
+<body>
+<h1>tinyTkr</h1>
+<h2>all about you and me ;-)</h2>
+<ol>
+  <li>who am i...<br>
+  born in the house of kodai; tinyTkr is a small windoz utility that 
+  periodically polls network devices and displays critical color coded values in 
+  a ticker tape format. I am small, simple and easy to use; so try me...<br>
+&nbsp;</li>
+  <li>where am i...<br>
+  tinyTkr 0.74e can be downloaded <a href="tinytkr-0.74e.zip">here</a></li><br>
+  <li>use me...<br>
+  <ul>
+    <li>Download and extract two files tinytkr.exe and tinytkr.conf</li>
+    <li>populate the configuration file with information about the devices you wish to monitor and</li>
+    <li>execute the tinytkr.exe application</li>
+    <li>Removing/uninstalling is even simpler, just delete both the files</li>
+  </ul>
+&nbsp;</li>
+  <li>your words are my command...<br>
+  The configuration file is a plain text file where you define devices and their attributes. The best way to understand the configuration file is to make changes to the sample file and execute the program ;-)<br><br>
+  for those who are technically curious...
+  <ul>
+    <li>Configuration files have 4 types of lines: blank lines, comment lines, device lines, and attribute lines</li>
+    <li>Lines that are empty are blank lines</li>
+    <li>Lines that start with the # character are comment lines </li>
+    <li>Device and Attribute lines have values seperated by the space character<br>
+    values that have the space character are quoted within a pair of &quot; 
+    characters</li>
+    <li>Devices are defined by one device line followed by zero or more attribute lines and are seperated by one or more blank lines</li>
+    <li>tinytkr currently supports 3 types of devices (protocols): snmp, cgi, and tcp<ul>
+	    <li><a href="http://en.wikipedia.org/wiki/Simple_Network_Management_Protocol">snmp</a>: read from standard snmp agents </li>
+      <li>tcp: checks the connection times of tcp based services listed as attributes</li>
+      <li><a href="http://en.wikipedia.org/wiki/Common_Gateway_Interface">cgi</a>: used to check the status of parameters (such as free 
+      disc space, network connections, memory, etc.) expressed as plain text via cgi<br>
+      the network address must be a <a href=="http://en.wikipedia.org/wiki/URL">URL</a> (hostname/resource-path)<br>
+      requires the URL to return plain text data as lines of attribute-name value pairs</li>
+    </ul>
+    </li>
+  </ul>
+  <br></li>
+  <li>talk to me...<br>
+  tinytkr@houseofkodai.in</li>
+</ol>
+
+</body>
+
+</html>
