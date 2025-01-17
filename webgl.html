@@ -25,10 +25,12 @@ canvas {
 //from https://github.com/PavelDoGreat/WebGL-Fluid-Simulation/
 'use strict';
 
-// Simulation section
 const canvas = document.createElement('canvas')
-document.body.appendChild(canvas)
-resizeCanvas();
+// Simulation section
+window.document.onload = function(e){ 
+  document.body.appendChild(canvas)
+  resizeCanvas();
+}
 
 let config = {
     SIM_RESOLUTION: 128,
