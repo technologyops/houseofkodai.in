@@ -21,17 +21,13 @@ canvas {
 </style>
 <title>skel</title>
 </head>
+<canvas></canvas>
 <script>
 //from https://github.com/PavelDoGreat/WebGL-Fluid-Simulation/
 'use strict';
 
-const canvas = document.createElement('canvas')
-window.addEventListener('resize', ()=>{
-  document.body.appendChild(canvas)
-  canvas.width = window.innerWidth
-  canvas.height = window.innerHeight
-  resizeCanvas()
-}, false)
+const canvas = document.getElementsByTagName('canvas')[0];
+resizeCanvas();
 // Simulation section
 
 let config = {
