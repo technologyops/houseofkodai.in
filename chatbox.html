@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content, viewport-fit=cover">
 <title>Chat</title>
 <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
@@ -14,14 +14,14 @@ body{background:#fff;font-family:'Google Sans',system-ui,sans-serif;display:flex
 .app{display:flex;flex-direction:column;width:100%;max-width:960px;height:100%}
 
 /* chat scroll area */
-.chat{flex:1;overflow-y:auto;padding:24px 24px 0;display:flex;flex-direction:column;gap:28px;scroll-behavior:smooth}
+.chat{flex:1;overflow-y:auto;padding:24px 24px 0;padding-left:max(24px,env(safe-area-inset-left));padding-right:max(24px,env(safe-area-inset-right));display:flex;flex-direction:column;gap:28px;scroll-behavior:smooth}
 .chat::-webkit-scrollbar{width:6px}
 .chat::-webkit-scrollbar-thumb{background:#cbd0d4;border-radius:8px}
 
 /* floating footer */
 .footer{
   position:fixed;bottom:0;left:0;right:0;
-  padding:8px 16px env(safe-area-inset-bottom,16px);
+  padding:8px max(16px,env(safe-area-inset-right)) env(safe-area-inset-bottom,16px) max(16px,env(safe-area-inset-left));
   background:rgba(255,255,255,.92);
   backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
   border-top:1px solid rgba(0,0,0,.06);
@@ -36,7 +36,7 @@ body{background:#fff;font-family:'Google Sans',system-ui,sans-serif;display:flex
 @keyframes pulse{0%,60%,100%{transform:scale(.6);opacity:.4}30%{transform:scale(1);opacity:1}}
 
 /* toast */
-.toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:rgba(32,33,36,.95);color:#fff;padding:8px 18px;border-radius:40px;font-size:14px;font-weight:500;opacity:0;transition:.2s;pointer-events:none;z-index:3000;white-space:nowrap}
+.toast{position:fixed;bottom:max(100px,calc(env(safe-area-inset-bottom) + 100px));left:50%;transform:translateX(-50%);background:rgba(32,33,36,.95);color:#fff;padding:8px 18px;border-radius:40px;font-size:14px;font-weight:500;opacity:0;transition:.2s;pointer-events:none;z-index:3000;white-space:nowrap}
 .toast.show{opacity:1}
 
 /* keyboard shortcut hint bar */
@@ -46,7 +46,7 @@ body{background:#fff;font-family:'Google Sans',system-ui,sans-serif;display:flex
 </head>
 <body>
 <div class="app">
-  <div class="chat" id="chatContainer"></div>
+  <div class="chat" id="chatContainer" role="log" aria-live="polite" aria-label="Conversation"></div>
   <div class="footer">
     <div class="footer-inner">
       <chat-input id="input"></chat-input>
@@ -64,6 +64,43 @@ body{background:#fff;font-family:'Google Sans',system-ui,sans-serif;display:flex
 <input type="file" id="fileInput" hidden multiple accept="image/*,video/*,audio/*,.pdf,.txt,.md,.csv,.json,.js,.ts,.py,.html,.css">
 
 <script>
+/* ── DOMPurify config ───────────────────────────────────────── */
+DOMPurify.addHook('afterSanitizeAttributes', node => {
+  if ('href' in node) {
+    const href = node.getAttribute('href') || '';
+    if (/^javascript:/i.test(href.replace(/\s/g,''))) {
+      node.removeAttribute('href');
+    }
+  }
+  if ('src' in node) {
+    const src = node.getAttribute('src') || '';
+    if (/^javascript:/i.test(src.replace(/\s/g,''))) {
+      node.removeAttribute('src');
+    }
+  }
+});
+
+const PURIFY_CONFIG = {
+  FORCE_BODY: true,
+  ALLOWED_TAGS: [
+    'p','br','strong','em','b','i','u','s','del','ins',
+    'h1','h2','h3','h4','h5','h6',
+    'ul','ol','li',
+    'blockquote','pre','code',
+    'table','thead','tbody','tr','th','td',
+    'a','img',
+    'hr','span','div',
+  ],
+  ALLOWED_ATTR: [
+    'href','src','alt','title','class',
+    'target','rel',
+    'colspan','rowspan',
+    'width','height',
+  ],
+};
+
+const sanitize = html => DOMPurify.sanitize(html, PURIFY_CONFIG);
+
 /* ── toast ──────────────────────────────────────────────────── */
 let _toastTimer;
 const showToast = (msg, dur=2000) => {
@@ -229,7 +266,7 @@ class CommandPalette extends HTMLElement {
   }
   render(){
     this.shadowRoot.innerHTML=`<style>
-      :host{display:none;position:fixed;inset:0;z-index:9000;align-items:flex-start;justify-content:center;padding-top:80px}
+      :host{display:none;position:fixed;inset:0;z-index:9000;align-items:flex-start;justify-content:center;padding-top:max(80px,calc(env(safe-area-inset-top) + 24px))}
       :host([open]){display:flex;animation:fi .1s ease}
       @keyframes fi{from{opacity:0}to{opacity:1}}
       .backdrop{position:absolute;inset:0;background:rgba(0,0,0,.3)}
@@ -336,10 +373,8 @@ customElements.define('user-msg',UserMsg);
 
 /* ── assistant-msg component ────────────────────────────────── */
 class AssistantMsg extends HTMLElement {
-  constructor(){super();this.attachShadow({mode:'open'})}
-  set text(v){this._text=v;this._render()}
-  _render(){
-    const safe=DOMPurify.sanitize(marked.parse(this._text||''),{FORBID_TAGS:['script','style','iframe'],FORBID_ATTR:['onerror','onload','onclick']});
+  constructor(){super();this.attachShadow({mode:'open'});this._streaming=false}
+  connectedCallback(){
     this.shadowRoot.innerHTML=`<style>
       :host{display:block}
       .h{display:flex;gap:12px;margin-bottom:6px;align-items:center}
@@ -369,21 +404,34 @@ class AssistantMsg extends HTMLElement {
       .btn:focus{outline:2px solid #1a73e8;outline-offset:2px}
     </style>
     <div class="h"><div class="av"><svg viewBox="0 0 24 24"><path d="M12 2L14.5 9.5 22 12 14.5 14.5 12 22 9.5 14.5 2 12 9.5 9.5 12 2z"/></svg></div><strong>Chat</strong></div>
-    <div class="body"><div class="md">${safe}</div></div>
-    <div class="btns">
+    <div class="body"><div class="md" id="content"></div></div>
+    <div class="btns" id="btns" style="display:none">
       <button class="btn copy" title="Copy (C)" aria-label="Copy response"><svg viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg></button>
       <button class="btn regen" title="Regenerate" aria-label="Regenerate response"><svg viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg></button>
       <button class="btn thumb-up" title="Good response" aria-label="Good response"><svg viewBox="0 0 24 24"><path d="M1 21h4V9H1v12zm22-11c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.59 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.84-1.22l3.02-7.05c.09-.23.14-.47.14-.73v-2z"/></svg></button>
       <button class="btn thumb-dn" title="Bad response" aria-label="Bad response"><svg viewBox="0 0 24 24"><path d="M15 3H6c-.83 0-1.54.5-1.84 1.22l-3.02 7.05c-.09.23-.14.47-.14.73v2c0 1.1.9 2 2 2h6.31l-.95 4.57-.03.32c0 .41.17.79.44 1.06L9.83 23l6.59-6.59c.36-.36.58-.86.58-1.41V5c0-1.1-.9-2-2-2zm4 0v12h4V3h-4z"/></svg></button>
       <button class="btn more" title="More options" aria-label="More options" aria-haspopup="menu"><svg viewBox="0 0 24 24"><path d="M6 10c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm12 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm-6 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg></button>
     </div>`;
-    this.shadowRoot.querySelector('.copy').onclick=()=>{navigator.clipboard.writeText(this._text);showToast('✓ Copied')};
-    this.shadowRoot.querySelector('.regen').onclick=()=>showToast('🔄 Regenerating…');
-    this.shadowRoot.querySelector('.thumb-up').onclick=e=>{e.currentTarget.style.fill='#1a73e8';showToast('👍 Thanks!')};
-    this.shadowRoot.querySelector('.thumb-dn').onclick=e=>{e.currentTarget.style.fill='#ea4335';showToast('👎 Noted')};
-    this.shadowRoot.querySelector('.more').onclick=e=>{
+    this._bindButtons();
+  }
+  set text(v){
+    this._text=v;
+    const el=this.shadowRoot.getElementById('content');
+    if(el) el.innerHTML=sanitize(marked.parse(v||''));
+  }
+  showButtons(){
+    const btns=this.shadowRoot.getElementById('btns');
+    if(btns) btns.style.display='flex';
+  }
+  _bindButtons(){
+    const sr=this.shadowRoot;
+    sr.querySelector('.copy').onclick=()=>{navigator.clipboard.writeText(this._text||'');showToast('✓ Copied')};
+    sr.querySelector('.regen').onclick=()=>showToast('🔄 Regenerating…');
+    sr.querySelector('.thumb-up').onclick=e=>{e.currentTarget.style.fill='#1a73e8';showToast('👍 Thanks!')};
+    sr.querySelector('.thumb-dn').onclick=e=>{e.currentTarget.style.fill='#ea4335';showToast('👎 Noted')};
+    sr.querySelector('.more').onclick=e=>{
       globalMenu.items=[
-        {label:'Copy',kbd:'C',icon:'<svg viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>',action:()=>{navigator.clipboard.writeText(this._text);showToast('✓ Copied')}},
+        {label:'Copy',kbd:'C',icon:'<svg viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>',action:()=>{navigator.clipboard.writeText(this._text||'');showToast('✓ Copied')}},
         {label:'Regenerate',icon:'<svg viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>',action:()=>showToast('🔄 Regenerating…')},
         {divider:true},
         {label:'Good response',icon:'<svg viewBox="0 0 24 24"><path d="M1 21h4V9H1v12zm22-11c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.59 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.84-1.22l3.02-7.05c.09-.23.14-.47.14-.73v-2z"/></svg>',action:()=>showToast('👍 Thanks!')},
@@ -439,7 +487,7 @@ class ChatInput extends HTMLElement {
           <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
         </button>
         <div style="display:flex;gap:2px;align-items:center">
-          <button class="btn" id="mic" aria-label="Voice input" title="Voice input">
+          <button class="btn" id="mic" aria-label="Voice input" title="Voice input" disabled style="opacity:.4;cursor:default">
             <svg viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zM17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
           </button>
           <button class="btn" id="send" aria-label="Send message" title="Send (Enter)">
@@ -483,13 +531,11 @@ class ChatInput extends HTMLElement {
     const box=this._box(), send=this._send(), stop=this.shadowRoot.getElementById('stop');
     box.oninput=()=>this._updateSend();
 
-    /* paste images */
     box.addEventListener('paste',async e=>{
       const imgs=[...(e.clipboardData?.items||[])].filter(i=>i.type.startsWith('image/'));
       if(imgs.length){e.preventDefault();await addFiles(imgs.map(i=>i.getAsFile()).filter(Boolean));this._updateSend()}
     });
 
-    /* drag-and-drop */
     this.shadowRoot.querySelector('.plate').addEventListener('dragover',e=>{e.preventDefault();e.dataTransfer.dropEffect='copy'});
     this.shadowRoot.querySelector('.plate').addEventListener('drop',async e=>{e.preventDefault();const f=[...e.dataTransfer.files];if(f.length){await addFiles(f);this._updateSend()}});
 
@@ -505,19 +551,13 @@ class ChatInput extends HTMLElement {
     stop.onclick=()=>{this.dispatchEvent(new CustomEvent('stop',{bubbles:true}))};
 
     box.onkeydown=e=>{
-      /* Slash at start → open command palette */
-      if(e.key==='/'&&box.value===''&&!e.ctrlKey&&!e.metaKey){
-        e.preventDefault(); palette.open(); return;
-      }
-      /* Enter = send; Shift+Enter = newline */
+      if(e.key==='/'&&box.value===''&&!e.ctrlKey&&!e.metaKey){e.preventDefault();palette.open();return}
       if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();dispatch();return}
-      /* Escape: clear input or close menu */
       if(e.key==='Escape'){
         if(globalMenu.hasAttribute('open')){globalMenu.close();return}
         if(box.value){box.value='';this._updateSend();showToast('Input cleared')}
         return;
       }
-      /* ↑ to recall last sent message */
       if(e.key==='ArrowUp'&&box.value===''&&msgHistory.length){
         e.preventDefault();
         if(historyIdx===-1){draftText=box.value;historyIdx=msgHistory.length-1}
@@ -526,7 +566,6 @@ class ChatInput extends HTMLElement {
         box.setSelectionRange(box.value.length,box.value.length);
         this._updateSend();return;
       }
-      /* ↓ to go forward in history or restore draft */
       if(e.key==='ArrowDown'&&historyIdx!==-1){
         e.preventDefault();
         if(historyIdx<msgHistory.length-1){historyIdx++;box.value=msgHistory[historyIdx]}
@@ -536,19 +575,17 @@ class ChatInput extends HTMLElement {
       }
     };
 
-    /* + button */
     this.shadowRoot.getElementById('plus').onclick=e=>{
       e.stopPropagation();
       globalMenu.items=[
         {label:'Upload from computer',icon:'<svg viewBox="0 0 24 24"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/></svg>',action:()=>document.getElementById('fileInput').click()},
-        {label:'Take a photo',icon:'<svg viewBox="0 0 24 24"><path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3A8.994 8.994 0 0013 3.06V1h-2v2.06A8.994 8.994 0 003.06 11H1v2h2.06A8.994 8.994 0 0011 20.94V23h2v-2.06A8.994 8.994 0 0020.94 13H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/></svg>',action:()=>showToast('Camera unavailable in demo')},
         {divider:true},
         {label:'Commands',kbd:'/',icon:'<svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>',action:()=>palette.open()},
       ];
       globalMenu.open(e.currentTarget);
     };
 
-    this.shadowRoot.getElementById('mic').onclick=()=>showToast('🎤 Voice input coming soon');
+    this.shadowRoot.getElementById('mic').onclick=null;
   }
 }
 customElements.define('chat-input',ChatInput);
@@ -559,28 +596,16 @@ document.getElementById('fileInput').onchange=async e=>{await addFiles([...e.tar
 /* ── global keyboard shortcuts ──────────────────────────────── */
 document.addEventListener('keydown',e=>{
   const box=document.querySelector('chat-input')?.shadowRoot?.getElementById('box');
-  const active=document.activeElement;
   const inInput=box&&(document.activeElement===box||document.activeElement?.shadowRoot?.contains(box));
-
-  /* Ctrl/Cmd+K or Ctrl+/ → command palette */
   if((e.ctrlKey||e.metaKey)&&(e.key==='k'||e.key==='/')){e.preventDefault();palette.open();return}
-  /* Ctrl/Cmd+Shift+O → new chat */
   if((e.ctrlKey||e.metaKey)&&e.shiftKey&&e.key==='O'){e.preventDefault();clearConversation();return}
-  /* Ctrl/Cmd+, → settings */
   if((e.ctrlKey||e.metaKey)&&e.key===','){e.preventDefault();showToast('⚙️ Settings coming soon');return}
-  /* Ctrl/Cmd+Shift+C → copy last */
   if((e.ctrlKey||e.metaKey)&&e.shiftKey&&e.key==='C'){e.preventDefault();copyLastResponse();return}
-  /* ? → show shortcuts help (when not typing) */
   if(e.key==='?'&&!inInput&&!e.ctrlKey&&!e.metaKey){showShortcutsHelp();return}
-  /* Esc closes palette */
   if(e.key==='Escape'&&palette.hasAttribute('open')){palette.close();focusInput();return}
-  /* Any printable key when nothing focused → focus textarea */
-  if(!inInput&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&e.key.length===1&&!palette.hasAttribute('open')){
-    box?.focus();
-  }
+  if(!inInput&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&e.key.length===1&&!palette.hasAttribute('open')){box?.focus()}
 });
 
-/* ── shortcuts help toast/modal ─────────────────────────────── */
 function showShortcutsHelp(){
   showToast('Shortcuts: Ctrl+K = commands · ↑ = recall · Esc = clear · / = palette · ? = help', 4000);
 }
@@ -617,6 +642,8 @@ inputComp.addEventListener('send',async e=>{
 
   const dots=document.createElement('div');
   dots.className='typing';
+  dots.setAttribute('role','status');
+  dots.setAttribute('aria-label','Generating response');
   dots.innerHTML='<div class="dot"></div><div class="dot"></div><div class="dot"></div>';
   chat.appendChild(dots);
   scrollBottom();
@@ -631,17 +658,16 @@ inputComp.addEventListener('send',async e=>{
   const a=document.createElement('assistant-msg');
   const reply=stubForFiles(files)||stubs[stubIdx++%stubs.length];
 
-  /* simulate streaming character by character */
-  a.text='';
   chat.appendChild(a);
-  const words=reply.split('');
-  for(let i=0;i<words.length;i++){
+  const chars=reply.split('');
+  for(let i=0;i<chars.length;i++){
     if(_stopRequested)break;
     a.text=reply.slice(0,i+1);
     if(i%6===0)scrollBottom();
     await new Promise(r=>setTimeout(r,8));
   }
   if(!_stopRequested)a.text=reply;
+  a.showButtons();
   _generating=false;
   inputComp.setGenerating(false);
   scrollBottom();
@@ -657,30 +683,41 @@ function scrollBottom(){chat.scrollTo({top:chat.scrollHeight,behavior:'smooth'})
 (function(){
   const footer=document.querySelector('.footer');
   const vv=window.visualViewport;
+  let rafId=null;
 
   function layout(){
+    rafId=null;
     const vvTop=vv?vv.offsetTop:0;
     const vvH=vv?vv.height:window.innerHeight;
     const vvW=vv?vv.width:window.innerWidth;
     const scrollY=window.scrollY||0;
-    footer.style.bottom=`${scrollY+(window.innerHeight-(vvTop+vvH))}px`;
+    /* keyboard offset: gap between visual viewport bottom and layout viewport bottom */
+    const kbOffset=scrollY+(window.innerHeight-(vvTop+vvH));
+    footer.style.bottom=`${kbOffset}px`;
     footer.style.width=`${vvW}px`;
     footer.style.left=`${vv?vv.offsetLeft:0}px`;
+    /* when keyboard is open (kbOffset > 0) suppress safe-area bottom padding to avoid double-inset */
+    footer.style.paddingBottom=kbOffset>0?'8px':'env(safe-area-inset-bottom,16px)';
 
-    /* pad chat area so last message isn't hidden */
     const fh=footer.getBoundingClientRect().height;
     chat.style.paddingBottom=`${fh+24}px`;
   }
 
-  if(vv){vv.addEventListener('resize',layout);vv.addEventListener('scroll',layout)}
-  window.addEventListener('resize',layout);
+  function scheduleLayout(){
+    if(rafId)return;
+    rafId=requestAnimationFrame(layout);
+  }
+
+  if(vv){vv.addEventListener('resize',scheduleLayout);vv.addEventListener('scroll',scheduleLayout)}
+  window.addEventListener('resize',scheduleLayout);
   layout();
 })();
 
 /* ── initial greeting ────────────────────────────────────────── */
 const init=document.createElement('assistant-msg');
+document.getElementById('chatContainer').appendChild(init);
 init.text="Hi! I'm a **full-featured chat demo** with Claude-style UX.\n\n**Keyboard shortcuts**\n\n| Key | Action |\n|---|---|\n| `Enter` | Send message |\n| `Shift+Enter` | New line |\n| `↑` / `↓` | Cycle message history |\n| `Esc` | Clear input / close menus |\n| `/` | Open command palette |\n| `Ctrl+K` | Command palette |\n| `Ctrl+Shift+O` | New conversation |\n| `Ctrl+Shift+C` | Copy last response |\n| `?` | Shortcut reminder |\n\nYou can also **drag & drop** files onto the input, or **paste images** from your clipboard.";
-chat.appendChild(init);
+init.showButtons();
 </script>
 </body>
 </html>
