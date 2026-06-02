@@ -506,8 +506,8 @@ class UserMsg extends HTMLElement {
     const mediaHtml = files?.length ? files.map(f => {
       const attrs = `data-lb-type="${f.type}" data-lb-src="${f.dataUrl}" data-lb-name="${f.file?.name||''}"`;
       if (f.type === 'image') return `<img class="i clickable" src="${f.dataUrl}" alt="${f.file?.name||''}" ${attrs}>`;
-      if (f.type === 'video') return `<video class="v clickable" src="${f.dataUrl}" ${attrs}></video>`;
-      if (f.type === 'audio') return `<div class="media-chip clickable" ${attrs}>${svgIcons.audio}<span>${f.file?.name||'Audio'}</span><span class="hint">▶ Play</span></div>`;
+      if (f.type === 'video') return `<video class="v" src="${f.dataUrl}" controls playsinline preload="metadata"></video>`;
+      if (f.type === 'audio') return `<audio class="au" src="${f.dataUrl}" controls preload="metadata"></audio>`;
       if (f.type === 'pdf')   return `<div class="media-chip clickable" ${attrs}>${svgIcons.pdf}<span>${f.file?.name||'Document'}</span><span class="hint">Open</span></div>`;
       return `<div class="chip">${svgIcons.text}<span>${f.file?.name||'File'} · ${fmtSize(f.file?.size||0)}</span></div>`;
     }).join('') : '';
