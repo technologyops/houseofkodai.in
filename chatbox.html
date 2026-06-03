@@ -163,6 +163,8 @@ const fileType = f => {
   return 'text';
 };
 const fmtSize = b => b<1024?b+'B':b<1048576?(b/1024).toFixed(1)+'KB':(b/1048576).toFixed(1)+'MB';
+// Fixed: truncate base name only, keep extension intact, never let it overflow the chip
+const fmtName = n => { const dot=n.lastIndexOf('.'); const base=dot>0?n.slice(0,dot):n; const ext=dot>0?n.slice(dot):''; return (base.length>8?base.slice(0,8)+'…':base)+ext; };
 const fmtTime = s => { const m=Math.floor(s/60); return `${m}:${String(Math.floor(s%60)).padStart(2,'0')}`; };
 const readAsDataURL = f => new Promise(res => { const r=new FileReader(); r.onload=e=>res(e.target.result); r.readAsDataURL(f); });
 
@@ -185,8 +187,6 @@ const svgIcons = {
   trash: '<svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>',
   search:'<svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>',
   download:'<svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zm-8 2V5h2v6h1.17L12 13.17 9.83 11H11zm-6 7h14v2H5z"/></svg>',
-  skip_back:'<svg viewBox="0 0 24 24"><path d="M11 18V6l-8.5 6 8.5 6zm.5-6 8.5 6V6l-8.5 6z"/></svg>',
-  skip_fwd: '<svg viewBox="0 0 24 24"><path d="M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z"/></svg>',
 };
 
 /* ── Pending files ── */
@@ -216,12 +216,9 @@ const lb = (() => {
     padding:`max(48px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(24px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left))`,
   });
   document.body.appendChild(el);
-
-  // Toolbar: close + download
   const toolbar = document.createElement('div');
   Object.assign(toolbar.style, {position:'absolute',top:'max(12px,env(safe-area-inset-top))',right:'max(12px,env(safe-area-inset-right))',display:'flex',gap:'8px',zIndex:'1'});
   el.appendChild(toolbar);
-
   const mkCtrlBtn = (svgStr, label) => {
     const b = document.createElement('button');
     b.innerHTML = svgStr; b.setAttribute('aria-label', label);
@@ -230,16 +227,13 @@ const lb = (() => {
     b.onmouseleave = () => b.style.background='var(--lb-ctrl)';
     return b;
   };
-
   const dlBtn = mkCtrlBtn(svgIcons.download, 'Download');
   dlBtn.style.display = 'none';
   const closeBtn = mkCtrlBtn('<svg viewBox="0 0 24 24" width="22" height="22"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>', 'Close');
   toolbar.appendChild(dlBtn); toolbar.appendChild(closeBtn);
-
   const content = document.createElement('div');
   Object.assign(content.style, {width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center',overflow:'hidden',position:'relative'});
   el.appendChild(content);
-
   const close = () => {
     el.style.display='none'; content.innerHTML=''; dlBtn.style.display='none'; dlBtn.onclick=null;
     document.body.style.overflow='';
@@ -250,19 +244,16 @@ const lb = (() => {
   el.addEventListener('click', e => { if (e.target===el||e.target===content) close(); });
   window.addEventListener('popstate', e => { if (el.style.display!=='none'&&!e.state?.lightbox) close(); });
   const pushLbState = () => history.pushState({lightbox:true},'');
-
   function openImage(src, alt, filename) {
     content.innerHTML=''; el.style.display='flex'; el.setAttribute('tabindex','-1'); el.focus(); pushLbState();
     dlBtn.style.display='flex';
     dlBtn.onclick = () => downloadDataUrl(src, filename||'image');
-
     const wrap = document.createElement('div');
     Object.assign(wrap.style, {width:'100%',height:'100%',position:'relative',overflow:'hidden',display:'flex',alignItems:'center',justifyContent:'center',cursor:'grab'});
     const img = document.createElement('img');
     img.src=src; img.alt=alt||'';
     Object.assign(img.style, {maxWidth:'100%',maxHeight:'100%',objectFit:'contain',userSelect:'none',pointerEvents:'none',transformOrigin:'center center',transition:'transform .05s'});
     wrap.appendChild(img); content.appendChild(wrap);
-
     let scale=1,ox=0,oy=0,dragging=false,lastX=0,lastY=0,pinchDist=null;
     const clamp=()=>{const mX=Math.max(0,(img.naturalWidth*scale-wrap.clientWidth)/2);const mY=Math.max(0,(img.naturalHeight*scale-wrap.clientHeight)/2);ox=Math.max(-mX,Math.min(mX,ox));oy=Math.max(-mY,Math.min(mY,oy));};
     const apply=()=>{img.style.transform=`translate(${ox}px,${oy}px) scale(${scale})`;};
@@ -275,7 +266,6 @@ const lb = (() => {
     wrap.addEventListener('touchend',e=>{if(e.touches.length<2)pinchDist=null;dragging=false;});
     wrap.addEventListener('dblclick',()=>{scale=1;ox=0;oy=0;apply();});
   }
-
   function openVideo(src, filename) {
     content.innerHTML=''; el.style.display='flex'; el.setAttribute('tabindex','-1'); el.focus(); pushLbState();
     dlBtn.style.display='flex';
@@ -284,31 +274,24 @@ const lb = (() => {
     Object.assign(wrap.style, {width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center'});
     const video = document.createElement('video');
     video.controls=true; video.autoplay=true; video.playsInline=true;
-    // Force native controls to be visible against any background
     Object.assign(video.style, {maxWidth:'100%',maxHeight:'calc(100% - 40px)',borderRadius:'10px',display:'block',colorScheme:'dark'});
     wrap.appendChild(video); content.appendChild(wrap);
     video.src=src; video.load();
   }
-
   function openAudio(src, name) {
     content.innerHTML=''; el.style.display='flex'; el.setAttribute('tabindex','-1'); el.focus(); pushLbState();
     dlBtn.style.display='flex';
     dlBtn.onclick = () => downloadDataUrl(src, name||'audio');
-
     const wrap = document.createElement('div');
     Object.assign(wrap.style, {width:'min(480px,100%)',background:'var(--surface)',borderRadius:'20px',padding:'32px 28px',display:'flex',flexDirection:'column',alignItems:'center',gap:'20px',boxShadow:'0 8px 32px rgba(0,0,0,.12)'});
-
     const icon = document.createElement('div');
     Object.assign(icon.style, {width:'96px',height:'96px',borderRadius:'50%',background:'var(--av-asst)',display:'flex',alignItems:'center',justifyContent:'center',fill:'var(--av-icon-asst)'});
     icon.innerHTML='<svg viewBox="0 0 24 24" width="48" height="48"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>';
-
     const nameEl = document.createElement('div');
     nameEl.textContent = name||'Audio';
     Object.assign(nameEl.style, {fontSize:'16px',fontWeight:'500',color:'var(--text)',fontFamily:FONT,textAlign:'center',maxWidth:'100%',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'});
-
     const audio = document.createElement('audio');
     audio.src=src; audio.preload='metadata';
-
     const scrubWrap = document.createElement('div');
     Object.assign(scrubWrap.style, {width:'100%',display:'flex',flexDirection:'column',gap:'6px'});
     const scrub = document.createElement('input');
@@ -320,7 +303,6 @@ const lb = (() => {
     const durTime = document.createElement('span'); durTime.textContent='0:00';
     timeRow.appendChild(curTime); timeRow.appendChild(durTime);
     scrubWrap.appendChild(scrub); scrubWrap.appendChild(timeRow);
-
     const mkBtn = (svg, label, size=48, primary=false) => {
       const b = document.createElement('button');
       b.innerHTML=svg; b.setAttribute('aria-label',label);
@@ -331,15 +313,12 @@ const lb = (() => {
     };
     const playIcon = '<svg viewBox="0 0 24 24" width="28" height="28"><path d="M8 5v14l11-7z"/></svg>';
     const pauseIcon = '<svg viewBox="0 0 24 24" width="28" height="28"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>';
-
     const skipBackBtn = mkBtn('<svg viewBox="0 0 24 24" width="22" height="22"><path d="M11 18V6l-8.5 6 8.5 6zm.5-6 8.5 6V6l-8.5 6z"/></svg>','Back 15 seconds',44);
     const playBtn = mkBtn(playIcon,'Play',64,true);
     const skipFwdBtn = mkBtn('<svg viewBox="0 0 24 24" width="22" height="22"><path d="M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z"/></svg>','Forward 15 seconds',44);
-
     const ctrlRow = document.createElement('div');
     Object.assign(ctrlRow.style, {display:'flex',alignItems:'center',gap:'12px'});
     ctrlRow.appendChild(skipBackBtn); ctrlRow.appendChild(playBtn); ctrlRow.appendChild(skipFwdBtn);
-
     audio.addEventListener('loadedmetadata',()=>{durTime.textContent=fmtTime(audio.duration);scrub.max=audio.duration;});
     audio.addEventListener('timeupdate',()=>{curTime.textContent=fmtTime(audio.currentTime);scrub.value=audio.currentTime;});
     audio.addEventListener('play',()=>{playBtn.innerHTML=pauseIcon;});
@@ -349,12 +328,10 @@ const lb = (() => {
     playBtn.onclick = () => audio.paused ? audio.play() : audio.pause();
     skipBackBtn.onclick = () => { audio.currentTime=Math.max(0,audio.currentTime-15); };
     skipFwdBtn.onclick = () => { audio.currentTime=Math.min(audio.duration||0,audio.currentTime+15); };
-
     wrap.appendChild(icon); wrap.appendChild(nameEl); wrap.appendChild(scrubWrap); wrap.appendChild(ctrlRow); wrap.appendChild(audio);
     content.appendChild(wrap);
     audio.play().catch(()=>{});
   }
-
   function openPdf(src, filename) {
     content.innerHTML=''; el.style.display='flex'; el.setAttribute('tabindex','-1'); el.focus(); pushLbState();
     dlBtn.style.display='flex';
@@ -364,7 +341,6 @@ const lb = (() => {
     Object.assign(embed.style, {width:'100%',height:'100%',borderRadius:'10px',border:'none'});
     content.appendChild(embed);
   }
-
   return {openImage,openVideo,openAudio,openPdf,close};
 })();
 
@@ -501,20 +477,22 @@ class UserMsg extends HTMLElement {
       if(f.type==='pdf') return `
         <div class="media-chip" style="display:inline-flex;align-items:center;gap:8px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:10px;padding:10px 14px;font-size:14px;color:var(--text);font-family:${FONT}">
           <span style="display:flex;fill:var(--av-icon-asst)">${svgIcons.pdf}</span>
-          <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px">${f.file?.name||'Document'}</span>
+          <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px" title="${f.file?.name||'Document'}">${fmtName(f.file?.name||'Document')}</span>
           <button class="chip-action clickable" ${attrs} title="Open" style="background:none;border:none;cursor:pointer;color:var(--link);font-size:12px;font-family:${FONT};padding:0 4px">Open</button>
           <button class="chip-dl" data-src="${f.dataUrl}" data-name="${f.file?.name||'document.pdf'}" title="Download" style="background:none;border:none;cursor:pointer;display:flex;fill:var(--text-secondary);padding:0;border-radius:4px">
             <svg viewBox="0 0 24 24" style="width:16px;height:16px"><path d="M19 9h-4V3H9v6H5l7 7 7-7zm-8 2V5h2v6h1.17L12 13.17 9.83 11H11zm-6 7h14v2H5z"/></svg>
           </button>
         </div>`;
-      // text/doc: show chip with download button
-      return `
-        <div class="chip" style="display:inline-flex;align-items:center;gap:8px;background:var(--bg-secondary);border-radius:8px;padding:8px 12px;font-size:13px;color:var(--text-chip);font-family:${FONT}">
-          <span style="display:flex;fill:var(--text-secondary)">${svgIcons.text}</span>
-          <span style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${f.file?.name||'File'} · ${fmtSize(f.file?.size||0)}</span>
-          <button class="chip-dl" data-src="${f.dataUrl}" data-name="${f.file?.name||'file'}" title="Download" style="background:none;border:none;cursor:pointer;display:flex;fill:var(--text-secondary);padding:0;border-radius:4px">
-            <svg viewBox="0 0 24 24" style="width:16px;height:16px"><path d="M19 9h-4V3H9v6H5l7 7 7-7zm-8 2V5h2v6h1.17L12 13.17 9.83 11H11zm-6 7h14v2H5z"/></svg>
-          </button>
+      // text/markdown: chip + rendered preview with copy button
+      if(f.type==='text') return `
+        <div style="display:flex;flex-direction:column;gap:6px;min-width:0;width:100%">
+          <div class="chip" style="align-self:flex-start">
+            <div class="ci">${svgIcons.text}</div>
+            <div class="cn"><b title="${f.file?.name||'File'}">${fmtName(f.file?.name||'File')}</b><small>${fmtSize(f.file?.size||0)}</small></div>
+            <button class="chip-copy" data-content="${encodeURIComponent(f.dataUrl||'')}" title="Copy text" aria-label="Copy text" style="background:none;border:none;cursor:pointer;display:flex;flex-shrink:0;fill:var(--text-secondary);padding:0 2px;border-radius:4px">${svgIcons.copy.replace('viewBox','style="width:15px;height:15px" viewBox')}</button>
+            ${f.dataUrl?`<button class="chip-dl" data-src="${encodeURIComponent(f.dataUrl)}" data-name="${f.file?.name||'file'}" title="Download" aria-label="Download ${f.file?.name||'file'}" style="background:none;border:none;cursor:pointer;display:flex;flex-shrink:0;fill:var(--text-secondary);padding:0 2px;border-radius:4px">${svgIcons.download.replace('viewBox','style="width:15px;height:15px" viewBox')}</button>`:''}
+          </div>
+          ${f.dataUrl?`<div class="txt-render md">${renderText(f.dataUrl)}</div>`:''}
         </div>`;
     }).join(''):'';
 
@@ -527,12 +505,20 @@ class UserMsg extends HTMLElement {
       strong{font-family:${FONT};font-size:15px;color:var(--text)}
       .t{padding-left:44px}
       ${MD_STYLES}${MD_USER_EXTRA}
-      .media{padding-left:44px;margin-top:8px;display:flex;flex-direction:column;gap:8px}
+      .media{padding-left:44px;margin-top:8px;display:flex;flex-direction:column;gap:8px;align-items:flex-start}
       .i{max-width:100%;max-height:320px;border-radius:10px;border:1px solid var(--border);display:block;object-fit:cover}
       .v{max-width:100%;max-height:320px;border-radius:10px;display:block}
       .au{max-width:100%;display:block}
+      .txt-render{background:var(--bg-secondary);border:1px solid var(--border);border-radius:10px;padding:12px 16px;max-height:320px;overflow-y:auto;width:100%;box-sizing:border-box;word-break:break-word;overflow-wrap:break-word}
+      .txt-render .plain{white-space:pre-wrap;word-break:break-word;overflow-wrap:break-word}
       .clickable{cursor:zoom-in;transition:opacity .15s}.clickable:hover{opacity:.85}
-      .chip-dl:hover{background:var(--btn-hover)!important}
+      /* Chip: fixed layout so long filenames never blow out the chip */
+      .chip{display:inline-flex;align-items:center;gap:6px;background:var(--bg-chip);border:1px solid var(--border);border-radius:10px;padding:4px 6px 4px 4px;max-width:min(320px,100%);min-width:0}
+      .ci{width:32px;height:32px;border-radius:6px;background:var(--bg-chip-icon);display:flex;align-items:center;justify-content:center;flex-shrink:0;fill:var(--text-secondary)}
+      .cn{display:flex;flex-direction:column;min-width:0;flex:1;overflow:hidden}
+      .cn b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px;font-weight:500;color:var(--text)}
+      .cn small{font-size:11px;color:var(--text-muted);white-space:nowrap}
+      .chip-copy:hover,.chip-dl:hover{background:var(--btn-hover)!important;border-radius:4px}
       ${BTN_STYLES}
       .btns{padding-left:44px;margin-top:6px}
     </style>
@@ -548,8 +534,16 @@ class UserMsg extends HTMLElement {
         else if(type==='pdf') lb.openPdf(src,name);
       });
     });
+    // copy text content
+    this.shadowRoot.querySelectorAll('.chip-copy').forEach(el=>{
+      el.addEventListener('click',e=>{
+        e.stopPropagation();
+        const txt = decodeURIComponent(el.dataset.content||'');
+        navigator.clipboard.writeText(txt).then(()=>showToast('✓ Copied'));
+      });
+    });
     this.shadowRoot.querySelectorAll('.chip-dl').forEach(el=>{
-      el.addEventListener('click',e=>{e.stopPropagation();downloadDataUrl(el.dataset.src,el.dataset.name);showToast('⬇ Downloading…');});
+      el.addEventListener('click',e=>{e.stopPropagation();downloadDataUrl(decodeURIComponent(el.dataset.src),el.dataset.name);showToast('⬇ Downloading…');});
     });
     this.shadowRoot.querySelector('.edit').onclick=()=>{
       this.dispatchEvent(new CustomEvent('chat:edit',{bubbles:true,composed:true,detail:{el:this,text:this._text,files:this._files}}));
@@ -601,7 +595,6 @@ class AssistantMsg extends HTMLElement {
   _bind(){
     const sr=this.shadowRoot;
     sr.querySelector('.copy').onclick=()=>{navigator.clipboard.writeText(this._text||'');showToast('✓ Copied');};
-    // Regenerate: replay last user turn
     sr.querySelector('.regen').onclick=()=>{
       const last=convHistory.slice().reverse().find(h=>h.role==='user');
       if(!last){showToast('Nothing to regenerate');return;}
@@ -651,9 +644,10 @@ class ChatInput extends HTMLElement {
       ${THEME_VARS}
       .plate{background:var(--bg-input);border-radius:28px;padding:4px 8px 6px;border:1px solid transparent;transition:background .2s,box-shadow .2s}
       .plate:focus-within{background:var(--input-focus-bg);box-shadow:var(--input-focus-shadow)}
-      #chips{display:flex;flex-wrap:wrap;gap:6px;padding:8px 8px 0}
+      #chips{display:flex;flex-wrap:wrap;gap:6px;padding:8px 8px 0;min-width:0}
       #chips:empty{display:none}
-      .chip{display:flex;align-items:center;gap:6px;background:var(--bg-chip);border:1px solid var(--border);border-radius:10px;padding:4px 6px 4px 4px;font-size:13px;color:var(--text-chip);font-family:${FONT};min-width:0;max-width:100%}
+      /* ── Chip fix: constrain width, truncate name, never overflow ── */
+      .chip{display:inline-flex;align-items:center;gap:6px;background:var(--bg-chip);border:1px solid var(--border);border-radius:10px;padding:4px 6px 4px 4px;max-width:min(260px,100%);min-width:0;overflow:hidden}
       .ct{width:36px;height:36px;object-fit:cover;border-radius:6px;flex-shrink:0}
       .ci{width:32px;height:32px;border-radius:6px;background:var(--bg-chip-icon);display:flex;align-items:center;justify-content:center;flex-shrink:0}
       .ci svg{width:18px;height:18px;fill:var(--text-secondary)}
@@ -692,12 +686,17 @@ class ChatInput extends HTMLElement {
     files.forEach(f=>{
       const ch=document.createElement('div'); ch.className='chip';
       const thumb=f.type==='image'&&f.dataUrl?`<img class="ct" src="${f.dataUrl}" alt="">`:`<div class="ci">${svgIcons[f.type]||svgIcons.text}</div>`;
-      // Show download button for pdf and text types; not for image/audio/video (those open in lightbox which has its own dl)
-      const dlBtn=(['pdf','text'].includes(f.type)&&f.dataUrl)
-        ?`<button class="cx chip-dl" data-src="${f.dataUrl}" data-name="${f.file.name}" title="Download" aria-label="Download ${f.file.name}">${svgIcons.download.replace('viewBox','style="width:14px;height:14px" viewBox')}</button>`
+      // Copy button for text/md files in the input chip
+      const copyBtn=(f.type==='text'&&f.dataUrl)
+        ?`<button class="cx chip-copy" data-content="${encodeURIComponent(f.dataUrl)}" title="Copy text" aria-label="Copy text"><svg viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg></button>`
         :'';
-      ch.innerHTML=`${thumb}<div class="cn"><b>${f.file.name}</b><small>${fmtSize(f.file.size)}</small></div>${dlBtn}<button class="cx" data-id="${f.id}" aria-label="Remove ${f.file.name}"><svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button>`;
+      const dlBtn=(['pdf','text'].includes(f.type)&&f.dataUrl)
+        ?`<button class="cx chip-dl" data-src="${f.dataUrl}" data-name="${f.file.name}" title="Download" aria-label="Download ${f.file.name}"><svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zm-8 2V5h2v6h1.17L12 13.17 9.83 11H11zm-6 7h14v2H5z"/></svg></button>`
+        :'';
+      ch.innerHTML=`${thumb}<div class="cn"><b title="${f.file.name}">${fmtName(f.file.name)}</b><small>${fmtSize(f.file.size)}</small></div>${copyBtn}${dlBtn}<button class="cx" data-id="${f.id}" aria-label="Remove ${f.file.name}"><svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button>`;
       ch.querySelector('.cx:last-child').onclick=e=>{e.stopPropagation();removeFile(f.id);};
+      const cpEl=ch.querySelector('.chip-copy');
+      if(cpEl)cpEl.onclick=e=>{e.stopPropagation();navigator.clipboard.writeText(decodeURIComponent(cpEl.dataset.content||'')).then(()=>showToast('✓ Copied'));};
       const dlEl=ch.querySelector('.chip-dl');
       if(dlEl)dlEl.onclick=e=>{e.stopPropagation();downloadDataUrl(dlEl.dataset.src,dlEl.dataset.name);showToast('⬇ Downloading…');};
       c.appendChild(ch);
@@ -857,41 +856,30 @@ chatInput.addEventListener('chat:send',async e=>{
   if(text)inputHistory.push(text);
   inputRecall.idx=-1;
   pushHistory('user',text,files);
-
   const u=document.createElement('user-msg');
   chat.appendChild(u);
   u.data={text,files};
-
   const dots=document.createElement('div');
   dots.className='typing';
   dots.setAttribute('role','status');
   dots.setAttribute('aria-label','Generating response');
   dots.innerHTML='<div class="dot" aria-hidden="true"></div><div class="dot" aria-hidden="true"></div><div class="dot" aria-hidden="true"></div>';
   chat.appendChild(dots);scrollBottom();
-
   _stopRequested=false;_generating=true;
   _abortCtrl=new AbortController();
-
   await new Promise(r=>setTimeout(r,600+Math.random()*400));
   dots.remove();
-
   if(_stopRequested){_generating=false;chatInput.setGenerating(false);scrollBottom();showToast('Stopped');return;}
-
   const a=document.createElement('assistant-msg');
   const reply=stubForFiles(files)||stubs[stubIdx++%stubs.length];
   chat.appendChild(a);scrollBottom();
-
   for(let i=0;i<reply.length;i++){
     if(_stopRequested)break;
     a.text=reply.slice(0,i+1);
     scrollBottom();
     await new Promise(r=>setTimeout(r,8));
   }
-
-  if(!_stopRequested){
-    a.text=reply;
-    pushHistory('assistant',reply);
-  }
+  if(!_stopRequested){a.text=reply;pushHistory('assistant',reply);}
   a.finalize();
   _generating=false;chatInput.setGenerating(false);scrollBottom();
 });
@@ -910,7 +898,7 @@ new ResizeObserver(([entry])=>{
 const init=document.createElement('assistant-msg');
 chat.appendChild(init);
 requestAnimationFrame(()=>{
-  init.text="Hi! I'm a **full-featured chat demo**.\n\nTry:\n- **Attaching a PDF or text file** — you'll see a download button on the chip and the file card\n- **Images** get a download button in the lightbox (top-right toolbar)\n- **Audio** now has skip ±15s buttons in the player\n- The **edit pencil** on your messages to revise and re-send\n- The **regenerate button** on any response to replay it\n- `/` to open the **command palette** · `↑` to recall · `?` for help";
+  init.text="Hi! Two fixes in this build:\n\n- **Chip overflow fixed** — long filenames (e.g. a markdown file with a very long name) are now clamped with `max-width` + `overflow:hidden` + `text-overflow:ellipsis` on the name column, so the chip never bleeds outside the input box\n- **Copy button added** — text/markdown attachments now show a copy icon (alongside the existing download icon) both in the input chip and in the sent-message card\n\nTry attaching a `.md` file to see both fixes in action.";
   init.finalize();
 });
 </script>
