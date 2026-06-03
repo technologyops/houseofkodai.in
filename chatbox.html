@@ -284,7 +284,8 @@ const lb = (() => {
     Object.assign(wrap.style, {width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center'});
     const video = document.createElement('video');
     video.controls=true; video.autoplay=true; video.playsInline=true;
-    Object.assign(video.style, {maxWidth:'100%',maxHeight:'100%',borderRadius:'10px',display:'block'});
+    // Force native controls to be visible against any background
+    Object.assign(video.style, {maxWidth:'100%',maxHeight:'calc(100% - 40px)',borderRadius:'10px',display:'block',colorScheme:'dark'});
     wrap.appendChild(video); content.appendChild(wrap);
     video.src=src; video.load();
   }
@@ -372,8 +373,14 @@ class FloatingMenu extends HTMLElement {
   constructor(){super();this.attachShadow({mode:'open'});this._items=[];this._anchor=null;this._focused=-1;}
   set items(v){this._items=v;this._focused=-1;this._render();}
   connectedCallback(){
-    document.addEventListener('click',e=>{if(this.hasAttribute('open')&&!e.composedPath().includes(this)&&!e.composedPath().includes(this._anchor))this.close();});
-    document.addEventListener('keydown',e=>this._onKey(e));
+    this._onDocClick = e=>{if(this.hasAttribute('open')&&!e.composedPath().includes(this)&&!e.composedPath().includes(this._anchor))this.close();};
+    this._onDocKey  = e=>this._onKey(e);
+    document.addEventListener('click',  this._onDocClick);
+    document.addEventListener('keydown', this._onDocKey);
+  }
+  disconnectedCallback(){
+    document.removeEventListener('click',  this._onDocClick);
+    document.removeEventListener('keydown', this._onDocKey);
   }
   open(anchor){this._anchor=anchor;this.setAttribute('open','');requestAnimationFrame(()=>{this._pos();this._focusItem(0);});}
   close(){this.removeAttribute('open');if(this._anchor)this._anchor.focus();}
@@ -646,13 +653,13 @@ class ChatInput extends HTMLElement {
       .plate:focus-within{background:var(--input-focus-bg);box-shadow:var(--input-focus-shadow)}
       #chips{display:flex;flex-wrap:wrap;gap:6px;padding:8px 8px 0}
       #chips:empty{display:none}
-      .chip{display:flex;align-items:center;gap:6px;background:var(--bg-chip);border:1px solid var(--border);border-radius:10px;padding:4px 8px 4px 4px;font-size:13px;color:var(--text-chip);font-family:${FONT};max-width:240px}
+      .chip{display:flex;align-items:center;gap:6px;background:var(--bg-chip);border:1px solid var(--border);border-radius:10px;padding:4px 6px 4px 4px;font-size:13px;color:var(--text-chip);font-family:${FONT};min-width:0;max-width:100%}
       .ct{width:36px;height:36px;object-fit:cover;border-radius:6px;flex-shrink:0}
       .ci{width:32px;height:32px;border-radius:6px;background:var(--bg-chip-icon);display:flex;align-items:center;justify-content:center;flex-shrink:0}
       .ci svg{width:18px;height:18px;fill:var(--text-secondary)}
-      .cn{display:flex;flex-direction:column;min-width:0;flex:1}
-      .cn b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px;font-size:12px;font-weight:500;color:var(--text)}
-      .cn small{font-size:11px;color:var(--text-muted)}
+      .cn{display:flex;flex-direction:column;min-width:0;flex:1;overflow:hidden}
+      .cn b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px;font-weight:500;color:var(--text)}
+      .cn small{font-size:11px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
       .cx{background:none;border:none;cursor:pointer;padding:2px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--text-secondary);flex-shrink:0}
       .cx:hover{background:var(--menu-hover)}.cx svg{width:14px;height:14px;fill:currentColor}
       textarea{width:100%;border:none;background:none;outline:none;padding:12px 4px 6px 12px;font-size:16px;font-family:${FONT};line-height:24px;resize:none;field-sizing:content;min-height:44px;max-height:200px;overflow-y:auto;color:var(--text)}
